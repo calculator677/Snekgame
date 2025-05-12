@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Snake Game</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      background: #222;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      font-family: sans-serif;
+    }
+    canvas {
+      background: #111;
+      border: 2px solid #0f0;
+    }
+    #score-board {
+      color: white;
+      margin-bottom: 10px;
+    }
+    #controls {
+      color: white;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div id="score-board">
+    <div>Score: <span id="score">0</span></div>
+    <div>High Score: <span id="highscore">0</span></div>
+  </div>
+  <canvas id="game" width="400" height="400"></canvas>
+  <div id="controls">
+    Growth per apple: <input type="range" id="growthSlider" min="1" max="50" value="1" />
+    <span id="growthValue">1</span>
+  </div>
+
+  <audio id="eatSound" src="https://freesound.org/data/previews/476/476178_10222150-lq.mp3"></audio>
+  <audio id="gameOverSound" src="https://freesound.org/data/previews/198/198841_285997-lq.mp3"></audio>
+
+  <script>
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const scoreText = document.getElementById('score');
+    const highScoreText = document.getElementById('highscore');
+    const growthSlider = document.getElementById('growthSlider');
+    const growthValue = document.getElementById('growthValue');
+    const eatSound = document.getElementById('eatSound');
+    const gameOverSound = document.getElementById('gameOverSound');
+
+    let highScore = parseInt(localStorage.getItem('highscore')) || 0;
+    highScoreText.textContent = highScore;
+
+    const gridSize = 20;
+    const tileCount = canvas.width / gridSize;
+
+    let snake = [{ x: 9, y: 9 }];
+    let velocity = { x: 0, y: 0 };
+    let apple = { x: 5, y: 5 };
+    let score = 0;
+    let growAmount = 1;
+
+    growthSlider.addEventListener('input', () => {
+      growAmount = parseInt(growthSlider.value);
+      growthValue.textContent = growAmount;
+    });
+
+    function gameLoop() {
+      requestAnimationFrame(gameLoop);
+      if (++frame % 5 !== 0) return;
+      update();
+      draw();
+    }
+
+    function update() {
+      const head = { x: snake[0].x + velocity.x, y: snake[0].y + velocity.y };
+
+      if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount || snake.some(p => p.x === head.x && p.y === head.y)) {
+        gameOverSound.play();
+        if (score > highScore) {
+          highScore = score;
+          localStorage.setItem('highscore', highScore);
+          highScoreText.textContent = highScore;
+        }
+        snake = [{ x: 9, y: 9 }];
+        velocity = { x: 0, y: 0 };
+        score = 0;
+        scoreText.textContent = score;
+        return;
+      }
+
+      snake.unshift(head);
+
+      if (head.x === apple.x && head.y === apple.y) {
+        eatSound.play();
+        score++;
+        scoreText.textContent = score;
+        placeApple();
+        for (let i = 1; i < growAmount; i++) {
+          snake.push({ ...snake[snake.length - 1] });
+        }
+      } else {
+        snake.pop();
+      }
+    }
+
+    function draw() {
+      ctx.fillStyle = '#111';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#0f0';
+      for (let s of snake) {
+        ctx.fillRect(s.x * gridSize, s.y * gridSize, gridSize - 2, gridSize - 2);
+      }
+
+      ctx.fillStyle = 'red';
+      ctx.fillRect(apple.x * gridSize, apple.y * gridSize, gridSize - 2, gridSize - 2);
+    }
+
+    function placeApple() {
+      apple.x = Math.floor(Math.random() * tileCount);
+      apple.y = Math.floor(Math.random() * tileCount);
+    }
+
+    document.addEventListener('keydown', e => {
+      switch (e.key) {
+        case 'ArrowUp': if (velocity.y === 0) velocity = { x: 0, y: -1 }; break;
+        case 'ArrowDown': if (velocity.y === 0) velocity = { x: 0, y: 1 }; break;
+        case 'ArrowLeft': if (velocity.x === 0) velocity = { x: -1, y: 0 }; break;
+        case 'ArrowRight': if (velocity.x === 0) velocity = { x: 1, y: 0 }; break;
+      }
+    });
+
+    let frame = 0;
+    gameLoop();
+  </script>
+</body>
+</html>
