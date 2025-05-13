@@ -101,7 +101,7 @@
 
       if (head.x === apple.x && head.y === apple.y) {
         eatSound.play();
-        score++;
+        score += growAmount;
         scoreText.textContent = score;
         placeApple();
         for (let i = 1; i < growAmount; i++) {
